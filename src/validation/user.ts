@@ -12,3 +12,5 @@ export const UserValidation = z.object({
         message: "Password must contain at least one uppercase, one lowercase, and one special character.",
     })
 })
+
+export type User = z.infer<typeof UserValidation>
