@@ -1,11 +1,12 @@
-import express from 'express'
-import mongoose from 'mongoose'
+import express, { Request } from 'express'
+import mongoose, { ObjectId } from 'mongoose'
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcrypt'
-import z from 'zod'
-import { UserModel } from './models/User'
+import z, { string } from 'zod'
+import { UserModel, ContentModel, TagModel } from './models/User'
 import { UserValidation, User } from './validation/user'
 import cookieParser from 'cookie-parser'
+import { Authorization } from './middlware'
 
 const app = express()
 
@@ -13,9 +14,11 @@ app.use(express.json())
 app.use(cookieParser())
 
 
+interface UserRequest extends Request {
+    user?: string
+}
 
-
-app.post('/sigup', async (req, res) => {
+app.post('/signup', async (req, res) => {
     try {
         const { success, error } = UserValidation.safeParse(req.body)
         if (!success) {
@@ -33,7 +36,7 @@ app.post('/sigup', async (req, res) => {
     }
 })
 
-app.post('signin', async (req, res) => {
+app.post('/signin', async (req, res) => {
     try {
         const { success, error } = UserValidation.safeParse(req.body)
         if (!success) {
@@ -59,6 +62,24 @@ app.post('signin', async (req, res) => {
     } catch (err) {
         return res.status(500).json({ msg: " Server error while signin" })
     }
+})
+
+app.post('/create', Authorization, async (req: UserRequest, res) => {
+    try {
+        // zod validation
+        const userData = req.user
+        const data: { title: string, link: string, tags: string[], type: string } = req.body
+        const TagData = await TagModel.create({ title: data.tags })
+        await ContentModel.create({ title: data.title, link: data.link, type: data.type, userId: userData, tags: TagData._id })
+        return res.status(200).json({ msg: "Conetent created" })
+
+    } catch (err) {
+        return res.status(500).json({ msg: " Server error while cretaing content" })
+    }
+})
+
+app.get('/', (req, res) => {
+    res.send('<h1>Madarchod chal raha hoon</h1>')
 })
 
 
