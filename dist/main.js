@@ -72,6 +72,77 @@ app.post('/create', middlware_1.Authorization, (req, res) => __awaiter(void 0, v
         return res.status(500).json({ msg: " Server error while cretaing content" });
     }
 }));
+app.get('/content', middlware_1.Authorization, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const userId = req.user;
+        const AllContent = yield User_1.ContentModel.find({ userId: userId }).populate([{ path: 'userId', model: 'User', select: 'email' }, { path: 'tags', model: 'Tag', select: 'title' }]);
+        return res.status(200).json({ content: AllContent });
+    }
+    catch (err) {
+        return res.status(500).json({ msg: " Server error while getting content" });
+    }
+}));
+app.delete('/content', middlware_1.Authorization, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const userId = req.user;
+        const contentId = req.body;
+        yield User_1.ContentModel.findOneAndDelete({ userId: userId, _id: contentId });
+        return res.status(200).json({ msg: "Deleted Sucessfully" });
+    }
+    catch (err) {
+        return res.status(500).json({ msg: " Server error while getting content" });
+    }
+}));
+app.post('/share', middlware_1.Authorization, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const userId = req.user;
+        const context = req.body;
+        console.log(context);
+        const ContentData = yield User_1.ContentModel.findOne({ _id: context.post_Id, userId });
+        console.log(ContentData);
+        if (!ContentData) {
+            return res.status(400).json({ msg: "Cannot share" });
+        }
+        if (context.share) {
+            ContentData.share = true;
+            const id = crypto.randomUUID().replace(/-/g, '');
+            ContentData.link = id;
+            yield ContentData.save();
+            return res.status(200).json({ link: `http://localhost:500/${id}` });
+        }
+        else {
+            ContentData.share = false;
+            ContentData.link = undefined;
+            yield ContentData.save();
+            return res.status(200).json({ msg: "Post Disabled" });
+        }
+    }
+    catch (err) {
+        return res.status(500).json({ msg: " Server error while gettin sharing" });
+    }
+}));
+app.get('/:sharelink', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
+    try {
+        const data = req.params.sharelink;
+        if (!data) {
+            return res.status(400).json("No Brain found");
+        }
+        const Data = yield User_1.ContentModel.findOne({ link: data }).populate([{ path: 'userId', select: 'email' }, { path: 'tags', select: 'title' }]);
+        if (!Data) {
+            return res.status(400).json("No Data found");
+        }
+        return res.status(200).json({ username: (_a = Data.userId) === null || _a === void 0 ? void 0 : _a.email, content: {
+                title: Data.title,
+                link: Data.link,
+                type: Data.type,
+                tags: (_b = Data.tags) === null || _b === void 0 ? void 0 : _b.title
+            } });
+    }
+    catch (err) {
+        return res.status(500).json({ msg: " Server error while getting sharing" });
+    }
+}));
 app.get('/', (req, res) => {
     res.send('<h1>Madarchod chal raha hoon</h1>');
 });

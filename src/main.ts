@@ -78,6 +78,104 @@ app.post('/create', Authorization, async (req: UserRequest, res) => {
     }
 })
 
+app.get('/content', Authorization, async (req: UserRequest, res) => {
+    try {
+        const userId = req.user
+        const AllContent = await ContentModel.find({ userId: userId }).populate([{ path: 'userId', model: 'User', select: 'email' }, { path: 'tags', model: 'Tag', select: 'title' }])
+        return res.status(200).json({ content: AllContent })
+
+
+
+    } catch (err) {
+        return res.status(500).json({ msg: " Server error while getting content" })
+    }
+})
+
+
+app.delete('/content', Authorization, async (req: UserRequest, res) => {
+    try {
+        const userId = req.user
+        const contentId = req.body
+        await ContentModel.findOneAndDelete({ userId: userId, _id: contentId })
+        return res.status(200).json({ msg: "Deleted Sucessfully" })
+
+    } catch (err) {
+        return res.status(500).json({ msg: " Server error while getting content" })
+
+    }
+})
+
+app.post('/share', Authorization, async (req: UserRequest, res) => {
+    try {
+        const userId = req.user
+        const context: { post_Id: ObjectId, share: boolean } = req.body
+        console.log(context)
+        const ContentData = await ContentModel.findOne({ _id: context.post_Id, userId })
+        console.log(ContentData)
+        if (!ContentData) {
+            return res.status(400).json({ msg: "Cannot share" })
+        }
+        if (context.share) {
+            ContentData.share = true
+            const id = crypto.randomUUID().replace(/-/g, '')
+            ContentData.link = id
+            await ContentData.save()
+            return res.status(200).json({ link: `http://localhost:500/${id}` })
+        } else {
+            ContentData.share = false
+            ContentData.link = undefined
+            await ContentData.save()
+            return res.status(200).json({ msg: "Post Disabled" })
+
+        }
+
+
+
+    } catch (err) {
+        return res.status(500).json({ msg: " Server error while gettin sharing" })
+
+    }
+})
+
+
+interface PopulatedUserEmail{
+    email:string
+}
+interface Popultaedtag{
+    title:[string]
+}
+interface PopulatedAray{
+    userId:PopulatedUserEmail
+    tags:Popultaedtag
+    title:string
+    link:string
+    type:string
+    
+}
+
+
+app.get('/:sharelink', async (req, res) => {
+    try {
+        const data = req.params.sharelink
+        if (!data) {
+            return res.status(400).json("No Brain found")
+        }
+        const Data = await ContentModel.findOne({ link: data }).populate([{path:'userId',select:'email'},{path:'tags',select:'title'}])as unknown as PopulatedAray
+        if (!Data) {
+            return res.status(400).json("No Data found")
+        }
+        return res.status(200).json({username:Data.userId?.email,content:{
+            title: Data.title,
+            link: Data.link,
+            type: Data.type,
+            tags:Data.tags?.title
+        }})
+
+    } catch (err) {
+        return res.status(500).json({ msg: " Server error while getting sharing" })
+    }
+})
+
 app.get('/', (req, res) => {
     res.send('<h1>Madarchod chal raha hoon</h1>')
 })

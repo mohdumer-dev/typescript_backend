@@ -17,7 +17,8 @@ const ContentSchema = new Schema({
     link: { type: String },
     type: { type: String, enum: ["image", "video", "audio", "article"] },
     tags: { ref: 'Tag', type: ObjectId },
-    title: { type: String, required: true }
+    title: { type: String, required: true },
+    share: { type: Boolean, default: false }
 });
 exports.ContentModel = mongoose_1.default.model('Content', ContentSchema);
 const TagSchema = new Schema({

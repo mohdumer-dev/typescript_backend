@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { string } from "zod";
+import { boolean, string } from "zod";
 const Schema = mongoose.Schema
 const ObjectId = mongoose.Schema.ObjectId
 
@@ -15,7 +15,8 @@ const ContentSchema = new Schema({
     link: { type: String },
     type: { type: String, enum: ["image", "video", "audio", "article"] },
     tags: { ref: 'Tag', type: ObjectId },
-    title: { type: String, required: true }
+    title: { type: String, required: true },
+    share: { type: Boolean, default: false }
 })
 
 
