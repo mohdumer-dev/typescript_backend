@@ -104,11 +104,14 @@ app.post('/share', middlware_1.Authorization, (req, res) => __awaiter(void 0, vo
             return res.status(400).json({ msg: "Cannot share" });
         }
         if (context.share) {
+            if (ContentData.link) {
+                return res.status(200).json({ link: `http://localhost:500/${ContentData.title}/${ContentData === null || ContentData === void 0 ? void 0 : ContentData.link}` });
+            }
             ContentData.share = true;
             const id = crypto.randomUUID().replace(/-/g, '');
             ContentData.link = id;
             yield ContentData.save();
-            return res.status(200).json({ link: `http://localhost:500/${id}` });
+            return res.status(200).json({ link: `http://localhost:500/${ContentData.title}/${id}` });
         }
         else {
             ContentData.share = false;
@@ -121,7 +124,7 @@ app.post('/share', middlware_1.Authorization, (req, res) => __awaiter(void 0, vo
         return res.status(500).json({ msg: " Server error while gettin sharing" });
     }
 }));
-app.get('/:sharelink', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+app.get('/:slug/:sharelink', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
     try {
         const data = req.params.sharelink;

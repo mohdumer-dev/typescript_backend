@@ -111,16 +111,21 @@ app.post('/share', Authorization, async (req: UserRequest, res) => {
         const context: { post_Id: ObjectId, share: boolean } = req.body
         console.log(context)
         const ContentData = await ContentModel.findOne({ _id: context.post_Id, userId })
+        
         console.log(ContentData)
         if (!ContentData) {
             return res.status(400).json({ msg: "Cannot share" })
         }
+      
         if (context.share) {
+            if(ContentData.link){
+                return  res.status(200).json({ link: `http://localhost:500/${ContentData.title}/${ContentData?.link}` })
+            }
             ContentData.share = true
             const id = crypto.randomUUID().replace(/-/g, '')
             ContentData.link = id
             await ContentData.save()
-            return res.status(200).json({ link: `http://localhost:500/${id}` })
+            return res.status(200).json({ link: `http://localhost:500/${ContentData.title}/${id}` })
         } else {
             ContentData.share = false
             ContentData.link = undefined
@@ -154,7 +159,7 @@ interface PopulatedAray{
 }
 
 
-app.get('/:sharelink', async (req, res) => {
+app.get('/:slug/:sharelink', async (req, res) => {
     try {
         const data = req.params.sharelink
         if (!data) {
