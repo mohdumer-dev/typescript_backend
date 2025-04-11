@@ -7,11 +7,16 @@ import { UserModel, ContentModel, TagModel } from './models/User'
 import { UserValidation, User } from './validation/user'
 import cookieParser from 'cookie-parser'
 import { Authorization } from './middlware'
+import cors from 'cors'
 
 const app = express()
 
 app.use(express.json())
 app.use(cookieParser())
+app.use(cors({
+    origin:'http://localhost:5173',
+    credentials:true
+}))
 
 
 interface UserRequest extends Request {
@@ -109,10 +114,8 @@ app.post('/share', Authorization, async (req: UserRequest, res) => {
     try {
         const userId = req.user
         const context: { post_Id: ObjectId, share: boolean } = req.body
-        console.log(context)
         const ContentData = await ContentModel.findOne({ _id: context.post_Id, userId })
         
-        console.log(ContentData)
         if (!ContentData) {
             return res.status(400).json({ msg: "Cannot share" })
         }
