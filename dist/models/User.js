@@ -9,16 +9,16 @@ const Schema = mongoose_1.default.Schema;
 const ObjectId = mongoose_1.default.Schema.ObjectId;
 const UserSchema = new Schema({
     email: { type: String, required: true, unique: true },
-    password: { type: String, required: true }
+    password: { type: String, required: true },
+    link: { type: String },
+    share: { type: Boolean, default: false }
 });
 exports.UserModel = mongoose_1.default.model('User', UserSchema);
 const ContentSchema = new Schema({
     userId: { type: ObjectId, ref: 'User' },
-    link: { type: String },
-    type: { type: String, enum: ["image", "video", "audio", "article"] },
+    type: { type: String, enum: ["image", "video", "audio", "article", "youtube", "twitter"] },
     tags: { ref: 'Tag', type: ObjectId },
     title: { type: String, required: true },
-    share: { type: Boolean, default: false }
 });
 exports.ContentModel = mongoose_1.default.model('Content', ContentSchema);
 const TagSchema = new Schema({

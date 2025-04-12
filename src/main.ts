@@ -14,8 +14,8 @@ const app = express()
 app.use(express.json())
 app.use(cookieParser())
 app.use(cors({
-    origin:'http://localhost:5173',
-    credentials:true
+    origin: 'http://localhost:5173',
+    credentials: true
 }))
 
 
@@ -73,8 +73,13 @@ app.post('/create', Authorization, async (req: UserRequest, res) => {
     try {
         // zod validation
         const userData = req.user
+        console.log(userData)
         const data: { title: string, link: string, tags: string[], type: string } = req.body
+        if (!data.title || !data.link || !data.type || !data.tags) {
+            return res.status(404).json({ sucess: false, msg: "All fields should be filled" })
+        }
         const TagData = await TagModel.create({ title: data.tags })
+        console.log(TagData)
         await ContentModel.create({ title: data.title, link: data.link, type: data.type, userId: userData, tags: TagData._id })
         return res.status(200).json({ msg: "Conetent created" })
 
@@ -97,10 +102,10 @@ app.get('/content', Authorization, async (req: UserRequest, res) => {
 })
 
 
-app.delete('/content', Authorization, async (req: UserRequest, res) => {
+app.delete('/content/:contentId', Authorization, async (req: UserRequest, res) => {
     try {
         const userId = req.user
-        const contentId = req.body
+        const contentId = req.params.contentId
         await ContentModel.findOneAndDelete({ userId: userId, _id: contentId })
         return res.status(200).json({ msg: "Deleted Sucessfully" })
 
@@ -113,26 +118,31 @@ app.delete('/content', Authorization, async (req: UserRequest, res) => {
 app.post('/share', Authorization, async (req: UserRequest, res) => {
     try {
         const userId = req.user
-        const context: { post_Id: ObjectId, share: boolean } = req.body
-        const ContentData = await ContentModel.findOne({ _id: context.post_Id, userId })
-        
+        const context: { share: boolean } = req.body
+        const ContentData = await ContentModel.find({ userId })
+
         if (!ContentData) {
             return res.status(400).json({ msg: "Cannot share" })
         }
-      
+        const User = await UserModel.findOne({ _id: userId })
+
+        if (!User) {
+            return res.status(404).json({ msg: "No User Found" })
+        }
+
         if (context.share) {
-            if(ContentData.link){
-                return  res.status(200).json({ link: `http://localhost:500/${ContentData.title}/${ContentData?.link}` })
+            if (User.link) {
+                return res.status(200).json({ msg: `http://localhost:500/${User?.link}` })
             }
-            ContentData.share = true
+            User.share = true
             const id = crypto.randomUUID().replace(/-/g, '')
-            ContentData.link = id
-            await ContentData.save()
-            return res.status(200).json({ link: `http://localhost:500/${ContentData.title}/${id}` })
+            User.link = id
+            await User.save()
+            return res.status(200).json({ msg: `http://localhost:500/${id}` })
         } else {
-            ContentData.share = false
-            ContentData.link = undefined
-            await ContentData.save()
+            User.share = false
+            User.link = undefined
+            await User.save()
             return res.status(200).json({ msg: "Post Disabled" })
 
         }
@@ -146,19 +156,19 @@ app.post('/share', Authorization, async (req: UserRequest, res) => {
 })
 
 
-interface PopulatedUserEmail{
-    email:string
+interface PopulatedUserEmail {
+    email: string
 }
-interface Popultaedtag{
-    title:[string]
+interface Popultaedtag {
+    title: [string]
 }
-interface PopulatedAray{
-    userId:PopulatedUserEmail
-    tags:Popultaedtag
-    title:string
-    link:string
-    type:string
-    
+interface PopulatedAray {
+    userId: PopulatedUserEmail
+    tags: Popultaedtag
+    title: string
+    link: string
+    type: string
+
 }
 
 
@@ -168,16 +178,18 @@ app.get('/:slug/:sharelink', async (req, res) => {
         if (!data) {
             return res.status(400).json("No Brain found")
         }
-        const Data = await ContentModel.findOne({ link: data }).populate([{path:'userId',select:'email'},{path:'tags',select:'title'}])as unknown as PopulatedAray
+        const Data = await ContentModel.findOne({ link: data }).populate([{ path: 'userId', select: 'email' }, { path: 'tags', select: 'title' }]) as unknown as PopulatedAray
         if (!Data) {
             return res.status(400).json("No Data found")
         }
-        return res.status(200).json({username:Data.userId?.email,content:{
-            title: Data.title,
-            link: Data.link,
-            type: Data.type,
-            tags:Data.tags?.title
-        }})
+        return res.status(200).json({
+            username: Data.userId?.email, content: {
+                title: Data.title,
+                link: Data.link,
+                type: Data.type,
+                tags: Data.tags?.title
+            }
+        })
 
     } catch (err) {
         return res.status(500).json({ msg: " Server error while getting sharing" })

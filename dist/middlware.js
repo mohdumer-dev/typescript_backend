@@ -26,7 +26,6 @@ const Authorization = (req, res, next) => __awaiter(void 0, void 0, void 0, func
         if (!User) {
             return res.status(404).json({ msg: "User doesnot exist " });
         }
-        //@ts-ignore
         req.user = User._id;
         next();
     }

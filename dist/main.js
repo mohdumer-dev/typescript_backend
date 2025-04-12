@@ -68,8 +68,13 @@ app.post('/create', middlware_1.Authorization, (req, res) => __awaiter(void 0, v
     try {
         // zod validation
         const userData = req.user;
+        console.log(userData);
         const data = req.body;
+        if (!data.title || !data.link || !data.type || !data.tags) {
+            return res.status(404).json({ sucess: false, msg: "All fields should be filled" });
+        }
         const TagData = yield User_1.TagModel.create({ title: data.tags });
+        console.log(TagData);
         yield User_1.ContentModel.create({ title: data.title, link: data.link, type: data.type, userId: userData, tags: TagData._id });
         return res.status(200).json({ msg: "Conetent created" });
     }
@@ -87,10 +92,10 @@ app.get('/content', middlware_1.Authorization, (req, res) => __awaiter(void 0, v
         return res.status(500).json({ msg: " Server error while getting content" });
     }
 }));
-app.delete('/content', middlware_1.Authorization, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+app.delete('/content/:contentId', middlware_1.Authorization, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const userId = req.user;
-        const contentId = req.body;
+        const contentId = req.params.contentId;
         yield User_1.ContentModel.findOneAndDelete({ userId: userId, _id: contentId });
         return res.status(200).json({ msg: "Deleted Sucessfully" });
     }
@@ -102,24 +107,28 @@ app.post('/share', middlware_1.Authorization, (req, res) => __awaiter(void 0, vo
     try {
         const userId = req.user;
         const context = req.body;
-        const ContentData = yield User_1.ContentModel.findOne({ _id: context.post_Id, userId });
+        const ContentData = yield User_1.ContentModel.find({ userId });
         if (!ContentData) {
             return res.status(400).json({ msg: "Cannot share" });
         }
+        const User = yield User_1.UserModel.findOne({ _id: userId });
+        if (!User) {
+            return res.status(404).json({ msg: "No User Found" });
+        }
         if (context.share) {
-            if (ContentData.link) {
-                return res.status(200).json({ link: `http://localhost:500/${ContentData.title}/${ContentData === null || ContentData === void 0 ? void 0 : ContentData.link}` });
+            if (User.link) {
+                return res.status(200).json({ msg: `http://localhost:500/${User === null || User === void 0 ? void 0 : User.link}` });
             }
-            ContentData.share = true;
+            User.share = true;
             const id = crypto.randomUUID().replace(/-/g, '');
-            ContentData.link = id;
-            yield ContentData.save();
-            return res.status(200).json({ link: `http://localhost:500/${ContentData.title}/${id}` });
+            User.link = id;
+            yield User.save();
+            return res.status(200).json({ msg: `http://localhost:500/${id}` });
         }
         else {
-            ContentData.share = false;
-            ContentData.link = undefined;
-            yield ContentData.save();
+            User.share = false;
+            User.link = undefined;
+            yield User.save();
             return res.status(200).json({ msg: "Post Disabled" });
         }
     }
@@ -138,12 +147,14 @@ app.get('/:slug/:sharelink', (req, res) => __awaiter(void 0, void 0, void 0, fun
         if (!Data) {
             return res.status(400).json("No Data found");
         }
-        return res.status(200).json({ username: (_a = Data.userId) === null || _a === void 0 ? void 0 : _a.email, content: {
+        return res.status(200).json({
+            username: (_a = Data.userId) === null || _a === void 0 ? void 0 : _a.email, content: {
                 title: Data.title,
                 link: Data.link,
                 type: Data.type,
                 tags: (_b = Data.tags) === null || _b === void 0 ? void 0 : _b.title
-            } });
+            }
+        });
     }
     catch (err) {
         return res.status(500).json({ msg: " Server error while getting sharing" });

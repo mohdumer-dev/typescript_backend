@@ -2,10 +2,11 @@ import jwt from 'jsonwebtoken'
 import { Request, Response, NextFunction } from 'express'
 import { UserModel } from './models/User'
 import { any } from 'zod'
-import { ObjectId } from 'mongoose'
+import mongoose, { ObjectId } from 'mongoose'
+
 interface CustomRequest extends Request {
 
-    data?: ObjectId; // or whatever type you're attaching
+    user?:mongoose.Types.ObjectId; // or whatever type you're attaching
 }
 
 
@@ -21,7 +22,6 @@ export const Authorization = async (req: CustomRequest, res: Response, next: Nex
         if (!User) {
             return res.status(404).json({ msg: "User doesnot exist " })
         }
-        //@ts-ignore
         req.user = User._id
         next()
 
