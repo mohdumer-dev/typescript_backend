@@ -68,13 +68,11 @@ app.post('/create', middlware_1.Authorization, (req, res) => __awaiter(void 0, v
     try {
         // zod validation
         const userData = req.user;
-        console.log(userData);
         const data = req.body;
         if (!data.title || !data.link || !data.type || !data.tags) {
             return res.status(404).json({ sucess: false, msg: "All fields should be filled" });
         }
         const TagData = yield User_1.TagModel.create({ title: data.tags });
-        console.log(TagData);
         yield User_1.ContentModel.create({ title: data.title, link: data.link, type: data.type, userId: userData, tags: TagData._id });
         return res.status(200).json({ msg: "Conetent created" });
     }

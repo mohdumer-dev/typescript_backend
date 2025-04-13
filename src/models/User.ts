@@ -17,6 +17,8 @@ const ContentSchema = new Schema({
     type: { type: String, enum: ["image", "video", "audio", "article","youtube","twitter"] },
     tags: { ref: 'Tag', type: ObjectId },
     title: { type: String, required: true },
+    link: { type: String },
+
 })
 
 
